@@ -1,24 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, {useEffect, useState} from "react";
 import "./App.css";
 import "@aws-amplify/ui-react/styles.css";
-import { API, Storage } from 'aws-amplify';
-import {
-    Button,
-    Flex,
-    Heading,
-    Image,
-    Text,
-    TextField,
-    View,
-    withAuthenticator,
-} from '@aws-amplify/ui-react';
-import { listNotes } from "./graphql/queries";
-import {
-    createNote as createNoteMutation,
-    deleteNote as deleteNoteMutation,
-} from "./graphql/mutations";
+import {API, Storage} from 'aws-amplify';
+import {Button, Flex, Heading, Image, Text, TextField, View, withAuthenticator,} from '@aws-amplify/ui-react';
+import {listNotes} from "./graphql/queries";
+import {createNote as createNoteMutation, deleteNote as deleteNoteMutation,} from "./graphql/mutations";
 
-const App = ({ signOut }) => {
+// @ts-ignore
+const App = ({signOut}) => {
     const [notes, setNotes] = useState([]);
 
     useEffect(() => {
@@ -26,7 +15,7 @@ const App = ({ signOut }) => {
     }, []);
 
     async function fetchNotes() {
-        const apiData = await API.graphql({ query: listNotes });
+        const apiData = await API.graphql({query: listNotes});
         const notesFromAPI = apiData.data.listNotes.items;
         await Promise.all(
             notesFromAPI.map(async (note) => {
@@ -52,19 +41,19 @@ const App = ({ signOut }) => {
         if (!!data.image) await Storage.put(data.name, image);
         await API.graphql({
             query: createNoteMutation,
-            variables: { input: data },
+            variables: {input: data},
         });
         fetchNotes();
         event.target.reset();
     }
 
-    async function deleteNote({ id, name }) {
+    async function deleteNote({id, name}) {
         const newNotes = notes.filter((note) => note.id !== id);
         setNotes(newNotes);
         await Storage.remove(name);
         await API.graphql({
             query: deleteNoteMutation,
-            variables: { input: { id } },
+            variables: {input: {id}},
         });
     }
 
@@ -99,7 +88,7 @@ const App = ({ signOut }) => {
                 name="image"
                 as="input"
                 type="file"
-                style={{ alignSelf: "end" }}
+                style={{alignSelf: "end"}}
             />
             <Heading level={2}>Current Notes</Heading>
             <View margin="3rem 0">
@@ -118,7 +107,7 @@ const App = ({ signOut }) => {
                             <Image
                                 src={note.image}
                                 alt={`visual aid for ${notes.name}`}
-                                style={{ width: 400 }}
+                                style={{width: 400}}
                             />
                         )}
                         <Button variation="link" onClick={() => deleteNote(note)}>
@@ -126,7 +115,7 @@ const App = ({ signOut }) => {
                         </Button>
                     </Flex>
                 ))}
-                ))
+
             </View>
             <Button onClick={signOut}>Sign Out</Button>
         </View>
