@@ -16,9 +16,9 @@ const App = ({signOut}) => {
 
     async function fetchNotes() {
         const apiData = await API.graphql({query: listNotes});
-        const notesFromAPI = apiData.data.listNotes.items;
+        const notesFromAPI = apiData.apiData.listNotes.items;
         await Promise.all(
-            notesFromAPI.map(async (note) => {
+            notesFromAPI.map(async (note: { image: string; name: string; }) => {
                 if (note.image) {
                     const url = await Storage.get(note.name);
                     note.image = url;
@@ -29,26 +29,26 @@ const App = ({signOut}) => {
         setNotes(notesFromAPI);
     }
 
-    async function createNote(event) {
+    async function createNote(event: { preventDefault: () => void; target: HTMLFormElement | undefined; }) {
         event.preventDefault();
         const form = new FormData(event.target);
         const image = form.get("image");
         const data = {
             name: form.get("name"),
             description: form.get("description"),
-            image: image.name,
+            image:form.get('image.name')
         };
-        if (!!data.image) await Storage.put(data.name, image);
+        if (!!data.image) await Storage.put(data.name as string, image);
         await API.graphql({
             query: createNoteMutation,
             variables: {input: data},
         });
         fetchNotes();
-        event.target.reset();
     }
 
+    // @ts-ignore
     async function deleteNote({id, name}) {
-        const newNotes = notes.filter((note) => note.id !== id);
+        const newNotes = notes.filter((note:any) => note.id !== id);
         setNotes(newNotes);
         await Storage.remove(name);
         await API.graphql({
@@ -92,7 +92,7 @@ const App = ({signOut}) => {
             />
             <Heading level={2}>Current Notes</Heading>
             <View margin="3rem 0">
-                {notes.map((note) => (
+                {notes.map((note:any) => (
                     <Flex
                         key={note.id || note.name}
                         direction="row"
@@ -106,7 +106,7 @@ const App = ({signOut}) => {
                         {note.image && (
                             <Image
                                 src={note.image}
-                                alt={`visual aid for ${notes.name}`}
+                                alt={`visual aid for ${note.name}`}
                                 style={{width: 400}}
                             />
                         )}
