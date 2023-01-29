@@ -1,6 +1,6 @@
 interface INote {
-    id: number,
-      name: number,
+    id: string,
+      name: string,
         description: string,
     image: string
 }

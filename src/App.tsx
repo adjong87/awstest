@@ -5,6 +5,7 @@ import {API, Storage} from 'aws-amplify';
 import {Button, Flex, Heading, Image, Text, TextField, View, withAuthenticator,} from '@aws-amplify/ui-react';
 import {listNotes} from "./graphql/queries";
 import {createNote as createNoteMutation, deleteNote as deleteNoteMutation,} from "./graphql/mutations";
+import INote from "./INote";
 
 // @ts-ignore
 const App = ({signOut}) => {
@@ -41,9 +42,9 @@ const App = ({signOut}) => {
         fetchNotes();
     }
 
-    async function deleteNote(
-        { id, name }: { id: string; name: string }): Promise<void> {
-        await Storage.remove(name);
+    async function deleteNote(note: INote): Promise<void> {
+        await Storage.remove(note.name);
+        let id = note.id;
         await API.graphql({
             query: deleteNoteMutation,
             variables: { input: { id } },
@@ -85,7 +86,7 @@ const App = ({signOut}) => {
             />
             <Heading level={2}>Current Notes</Heading>
             <View margin="3rem 0">
-                {notes.map((note:any) => (
+                {notes.map((note:INote) => (
                     <Flex
                         key={note.id || note.name}
                         direction="row"
