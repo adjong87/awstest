@@ -8,52 +8,45 @@ import {createNote as createNoteMutation, deleteNote as deleteNoteMutation,} fro
 
 // @ts-ignore
 const App = ({signOut}) => {
-    const [notes, setNotes] = useState([]);
+    const [notes] = useState([]);
 
     useEffect(() => {
         fetchNotes();
     }, []);
 
-    async function fetchNotes() {
+    async function fetchNotes(): Promise<void> {
         const apiData = await API.graphql({query: listNotes});
-        const notesFromAPI = apiData.apiData.listNotes.items;
-        await Promise.all(
-            notesFromAPI.map(async (note: { image: string; name: string; }) => {
-                if (note.image) {
-                    const url = await Storage.get(note.name);
-                    note.image = url;
-                }
-                return note;
-            })
-        );
-        setNotes(notesFromAPI);
+        console.log(apiData);
+
     }
 
-    async function createNote(event: { preventDefault: () => void; target: HTMLFormElement | undefined; }) {
+    async function createNote(event: React.FormEvent<HTMLFormElement>): Promise<void> {
         event.preventDefault();
-        const form = new FormData(event.target);
-        const image = form.get("image");
-        const data = {
-            name: form.get("name"),
-            description: form.get("description"),
-            image:form.get('image.name')
+        const form = new FormData(event.currentTarget);
+        const image = form.get("image") as File;
+        const data: {
+            name: string;
+            description: string;
+            image?: string;
+        } = {
+            name: form.get("name") as string,
+            description: form.get("description") as string,
+            image: form.get("image.name") as string | undefined,
         };
-        if (!!data.image) await Storage.put(data.name as string, image);
+        if (!!data.image) await Storage.put(data.name, image);
         await API.graphql({
             query: createNoteMutation,
-            variables: {input: data},
+            variables: { input: data },
         });
         fetchNotes();
     }
 
-    // @ts-ignore
-    async function deleteNote({id, name}) {
-        const newNotes = notes.filter((note:any) => note.id !== id);
-        setNotes(newNotes);
+    async function deleteNote(
+        { id, name }: { id: string; name: string }): Promise<void> {
         await Storage.remove(name);
         await API.graphql({
             query: deleteNoteMutation,
-            variables: {input: {id}},
+            variables: { input: { id } },
         });
     }
 
