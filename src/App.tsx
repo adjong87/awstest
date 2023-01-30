@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import "./App.css";
 import "@aws-amplify/ui-react/styles.css";
 import {API, Storage} from 'aws-amplify';
@@ -9,42 +9,46 @@ import INote from "./INote";
 
 // @ts-ignore
 const App = ({signOut}) => {
-    const [notes] = useState([]);
+    const [notes, setNotes] = useState<Array<INote>>([]);
 
-    useEffect(() => {
-        fetchNotes();
-    }, []);
 
-    async function fetchNotes(): Promise<void> {
-        const apiData = await API.graphql({query: listNotes});
+    async function fetchNotes() {
+        const apiData = await API.graphql({ query: listNotes });
         console.log(apiData);
-
+        // @ts-ignore
+        const notesFromAPI:any[] = apiData.data.listNotes.items;
+        await Promise.all(
+            notesFromAPI.map(async (note) => {
+                if (note.image) {
+                    note.image = await Storage.get(note.name);
+                }
+                return note;
+            })
+        );
+        setNotes(notesFromAPI);
     }
 
-    async function createNote(event: React.FormEvent<HTMLFormElement>): Promise<void> {
+    async function createNote(event:any) {
         event.preventDefault();
-        const form = new FormData(event.currentTarget);
-        const image = form.get("image") as File;
-        const data: {
-            name: string;
-            description: string;
-            image?: string;
-        } = {
-            name: form.get("name") as string,
-            description: form.get("description") as string,
-            image: form.get("image.name") as string | undefined,
+        const form = new FormData(event.target);
+        const data = {
+            name: form.get("name"),
+            description: form.get("description"),
+            image: form.get("image"),
         };
-        if (!!data.image) await Storage.put(data.name, image);
+        if (!!data.image) await Storage.put(data.name as string, data.image);
         await API.graphql({
             query: createNoteMutation,
             variables: { input: data },
         });
         fetchNotes();
+        event.target.reset();
     }
 
-    async function deleteNote(note: INote): Promise<void> {
-        await Storage.remove(note.name);
-        let id = note.id;
+
+    async function deleteNote(id:string, name:string ) {
+        setNotes(notes.filter((note) => note.id !== id));
+        await Storage.remove(name);
         await API.graphql({
             query: deleteNoteMutation,
             variables: { input: { id } },
@@ -72,21 +76,22 @@ const App = ({signOut}) => {
                         variation="quiet"
                         required
                     />
+                    <View
+                        name="image"
+                        as="input"
+                        type="file"
+                        style={{ alignSelf: "end" }}
+                    />
                     <Button type="submit" variation="primary">
                         Create Note
                     </Button>
 
                 </Flex>
             </View>
-            <View
-                name="image"
-                as="input"
-                type="file"
-                style={{alignSelf: "end"}}
-            />
+
             <Heading level={2}>Current Notes</Heading>
             <View margin="3rem 0">
-                {notes.map((note:INote) => (
+                {notes.map((note) => (
                     <Flex
                         key={note.id || note.name}
                         direction="row"
@@ -101,10 +106,10 @@ const App = ({signOut}) => {
                             <Image
                                 src={note.image}
                                 alt={`visual aid for ${note.name}`}
-                                style={{width: 400}}
+                                style={{ width: 400 }}
                             />
                         )}
-                        <Button variation="link" onClick={() => deleteNote(note)}>
+                        <Button variation="link" onClick={() => deleteNote(note.id, note.name)}>
                             Delete note
                         </Button>
                     </Flex>
